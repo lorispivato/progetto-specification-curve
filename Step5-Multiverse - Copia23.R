@@ -394,85 +394,101 @@ save.image("workspace.Rdata")
 load("workspace.Rdata")
 
 
-# Grafico p-value ---------------------------------------------------------
+# Volcano plot -------------------------------------------------------------
 
 # install.packages("BiocManager")
 # BiocManager::install("EnhancedVolcano")
 
-library(EnhancedVolcano)
+# library(EnhancedVolcano)
+# 
+# df <- beta_scala_ms %>%
+#   filter(Interaction == "ORDER:ALIGNMENT") %>%
+#   as.data.frame()
+# 
+# EnhancedVolcano(
+#   df,
+#   lab = rownames(df),
+#   x = "estimate",
+#   y = "p.value"
+# )
 
-df <- beta_scala_ms %>%
-  filter(Interaction == "ORDER:ALIGNMENT") %>%
-  as.data.frame()
-
-EnhancedVolcano(
-  df,
-  lab = rownames(df),
-  x = "estimate",
-  y = "p.value"
-)
 
 
+## Scala dei ms ------------------------------------------------------------
 
-# Scala dei ms
+beta_all = beta_scala_ms %>% 
+  add_row(beta_scala_log) %>% 
+  mutate(scala = c(rep("ms", nrow(beta_scala_ms)),
+                   rep("log", nrow(beta_scala_log))))
 
-beta_scala_ms %>% 
-  filter(Interaction == "ORDER:ALIGNMENT") %>% 
-  select(estimate, p.value) %>% 
-  arrange(estimate) %>% 
+which_interaction = "ORDER"
+which_scala = "log"
+
+beta_all %>% 
+  filter(scala == which_scala) %>% 
+  filter(Interaction == which_interaction) %>% 
+  mutate(significativo = (p.value < 0.05)) %>% 
   mutate(p.value = -log10(p.value)) %>% 
-  ggplot(aes(x=estimate, y=p.value)) + 
-  geom_point() +
-  geom_hline(yintercept = -log10(0.05))
-
-
-beta_scala_ms %>% 
-  filter(Interaction == "ALIGNMENT:CONDITION") %>% 
-  select(estimate, p.value) %>% 
   arrange(estimate) %>% 
-  mutate(p.value = -log(p.value)) %>% 
-  ggplot(aes(x=estimate, y=p.value)) + 
+  ggplot(aes(x=estimate, y=p.value, pch=removed_category, 
+         col=significativo)) + 
   geom_point() +
-  geom_hline(yintercept = -log10(0.05))
+  geom_hline(yintercept = -log10(0.05), col=2, lwd=1) +
+  annotate("text", x = -Inf, y = -log10(0.05), label = "Soglia 0.05", 
+           vjust = -0.5, hjust = -0.1) +
+  theme_bw() +
+  labs(x = "Stima del coefficiente", y = "-log10(p-value)",
+       pch = "Categoria rimossa", col = "Significativo",
+       title = paste0("Volcano plot per ", which_interaction, ", scala ", which_scala)) +
+  scale_color_manual(
+    values = c("FALSE" = "#F8766D", "TRUE" = "#00BFC4"),
+    labels = c("FALSE" = "No", "TRUE" = "Sì")
+  ) +
+  guides(
+    colour = guide_legend(order = 1),
+    shape  = guide_legend(order = 2)
+  )
 
 
-beta_scala_ms %>% 
-  filter(Interaction == "ORDER") %>% 
-  select(estimate, p.value) %>% 
-  arrange(estimate) %>% 
-  mutate(p.value = -log(p.value)) %>% 
-  ggplot(aes(x=estimate, y=p.value)) + 
-  geom_point() +
-  geom_hline(yintercept = -log10(0.05))
+# Salvataggio automatico di tutti i 6 grafici
+
+for(which_scala in c("ms", "log")) {
+  for(which_interaction in c("ORDER:ALIGNMENT", "ALIGNMENT:CONDITION", "ORDER")) {
+    print(c(which_scala, which_interaction))
+    
+    grafico = beta_all %>% 
+      filter(scala == which_scala) %>% 
+      filter(Interaction == which_interaction) %>% 
+      mutate(significativo = (p.value < 0.05)) %>% 
+      mutate(p.value = -log10(p.value)) %>% 
+      arrange(estimate) %>% 
+      ggplot(aes(x=estimate, y=p.value, pch=removed_category, 
+                 col=significativo)) + 
+      geom_point() +
+      geom_hline(yintercept = -log10(0.05), col=2, lwd=1) +
+      annotate("text", x = -Inf, y = -log10(0.05), label = "Soglia 0.05", 
+               vjust = -0.5, hjust = -0.1) +
+      theme_bw() +
+      labs(x = "Stima del coefficiente", y = "-log10(p-value)",
+           pch = "Categoria rimossa", col = "Significativo",
+           title = paste0("Volcano plot per ", which_interaction, ", scala ", which_scala)) +
+      scale_color_manual(
+        values = c("FALSE" = "#F8766D", "TRUE" = "#00BFC4"),
+        labels = c("FALSE" = "No", "TRUE" = "Sì")
+      ) +
+      guides(
+        colour = guide_legend(order = 1),
+        shape  = guide_legend(order = 2)
+      )
+    
+    nome_file = paste0("volcano_", str_replace_all(which_interaction, ":", "_"), "_", 
+                       which_scala, ".png")
+    ggsave(nome_file, plot = grafico, 
+           width = 4000, height = 4000/1.6, units = "px")
+  }
+}
 
 
-# Scala dei log ms
-
-beta_scala_log %>% 
-  filter(Interaction == "ORDER:ALIGNMENT") %>% 
-  select(estimate, p.value) %>% 
-  arrange(estimate) %>% 
-  mutate(p.value = -log10(p.value)) %>% 
-  ggplot(aes(x=estimate, y=p.value)) + 
-  geom_point() +
-  geom_hline(yintercept = -log10(0.05))
 
 
-beta_scala_log %>% 
-  filter(Interaction == "ALIGNMENT:CONDITION") %>% 
-  select(estimate, p.value) %>% 
-  arrange(estimate) %>% 
-  mutate(p.value = -log(p.value)) %>% 
-  ggplot(aes(x=estimate, y=p.value)) + 
-  geom_point() +
-  geom_hline(yintercept = -log10(0.05))
 
-
-beta_scala_log %>% 
-  filter(Interaction == "ORDER") %>% 
-  select(estimate, p.value) %>% 
-  arrange(estimate) %>% 
-  mutate(p.value = -log(p.value)) %>% 
-  ggplot(aes(x=estimate, y=p.value)) + 
-  geom_point() +
-  geom_hline(yintercept = -log10(0.05))
