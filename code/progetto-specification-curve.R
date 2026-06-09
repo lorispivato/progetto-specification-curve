@@ -387,10 +387,12 @@ load("data/workspace.Rdata")
 beta_all = beta_scala_ms %>% 
   add_row(beta_scala_log) %>% 
   mutate(scala = c(rep("ms", nrow(beta_scala_ms)),
-                   rep("log", nrow(beta_scala_log))))
+                   rep("log", nrow(beta_scala_log)))) %>% 
+    mutate(word_type = ifelse(grepl("item", model_id),
+                              "item", "category"))
 
-which_interaction = "ORDER"
-which_scala = "log"
+which_interaction = "ORDER:ALIGNMENT"
+which_scala = "ms"
 
 beta_all %>% 
   filter(scala == which_scala) %>% 
@@ -398,24 +400,23 @@ beta_all %>%
   mutate(significativo = (p.value < 0.05)) %>% 
   mutate(p.value = -log10(p.value)) %>% 
   arrange(estimate) %>% 
-  ggplot(aes(x=estimate, y=p.value, pch=removed_category, 
-         col=significativo)) + 
+  ggplot(aes(x=estimate, y=p.value, col=removed_category, 
+         pch=significativo)) + 
   geom_point() +
   geom_hline(yintercept = -log10(0.05), col=2, lwd=1) +
   annotate("text", x = -Inf, y = -log10(0.05), label = "Soglia 0.05", 
            vjust = -0.5, hjust = -0.1) +
   theme_bw() +
   labs(x = "Stima del coefficiente", y = "-log10(p-value)",
-       pch = "Categoria rimossa", col = "Significativo",
+       col = "Categoria rimossa", pch = "Significativo",
        title = paste0("Volcano plot per ", which_interaction, ", scala ", which_scala)) +
-  scale_color_manual(
-    values = c("FALSE" = "#F8766D", "TRUE" = "#00BFC4"),
-    labels = c("FALSE" = "No", "TRUE" = "Sì")
-  ) +
   guides(
     colour = guide_legend(order = 1),
-    shape  = guide_legend(order = 2)
-  )
+    shape  = guide_legend(order = 2)) +
+  scale_shape_manual(
+    values = c("FALSE" = 1,  # pieno
+               "TRUE"  = 16    # vuoto
+    ))
 
 
 # Salvataggio automatico di tutti i 6 grafici
@@ -425,29 +426,28 @@ for(which_scala in c("ms", "log")) {
     print(c(which_scala, which_interaction))
     
     grafico = beta_all %>% 
-      filter(scala == which_scala) %>% 
-      filter(Interaction == which_interaction) %>% 
-      mutate(significativo = (p.value < 0.05)) %>% 
-      mutate(p.value = -log10(p.value)) %>% 
-      arrange(estimate) %>% 
-      ggplot(aes(x=estimate, y=p.value, pch=removed_category, 
-                 col=significativo)) + 
-      geom_point() +
-      geom_hline(yintercept = -log10(0.05), col=2, lwd=1) +
-      annotate("text", x = -Inf, y = -log10(0.05), label = "Soglia 0.05", 
-               vjust = -0.5, hjust = -0.1) +
-      theme_bw() +
-      labs(x = "Stima del coefficiente", y = "-log10(p-value)",
-           pch = "Categoria rimossa", col = "Significativo",
-           title = paste0("Volcano plot per ", which_interaction, ", scala ", which_scala)) +
-      scale_color_manual(
-        values = c("FALSE" = "#F8766D", "TRUE" = "#00BFC4"),
-        labels = c("FALSE" = "No", "TRUE" = "Sì")
-      ) +
-      guides(
-        colour = guide_legend(order = 1),
-        shape  = guide_legend(order = 2)
-      )
+        filter(scala == which_scala) %>% 
+        filter(Interaction == which_interaction) %>% 
+        mutate(significativo = (p.value < 0.05)) %>% 
+        mutate(p.value = -log10(p.value)) %>% 
+        arrange(estimate) %>% 
+        ggplot(aes(x=estimate, y=p.value, col=removed_category, 
+                   pch=significativo)) + 
+        geom_point() +
+        geom_hline(yintercept = -log10(0.05), col=2, lwd=1) +
+        annotate("text", x = -Inf, y = -log10(0.05), label = "Soglia 0.05", 
+                 vjust = -0.5, hjust = -0.1) +
+        theme_bw() +
+        labs(x = "Stima del coefficiente", y = "-log10(p-value)",
+             col = "Categoria rimossa", pch = "Significativo",
+             title = paste0("Volcano plot per ", which_interaction, ", scala ", which_scala)) +
+        guides(
+            colour = guide_legend(order = 1),
+            shape  = guide_legend(order = 2)) +
+        scale_shape_manual(
+            values = c("FALSE" = 1,  # pieno
+                       "TRUE"  = 16    # vuoto
+            ))
     
     nome_file = paste0("figures/volcano_", str_replace_all(which_interaction, ":", "_"), "_", 
                        which_scala, ".png")
