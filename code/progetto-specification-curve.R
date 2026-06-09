@@ -1,75 +1,73 @@
-###########################
 
-#### Step 1: Data loading ####
-
+# ==============================================================================
+# 1. CARICAMENTO DEL DATASET
+# ==============================================================================
 library(dplyr)
 library(stringr)
-library(ggplot2)          # For creating visualizations
-library(tidyr)            # For data manipulation
-library(patchwork)        # For combining multiple plots
-library(lme4)             # For fitting linear mixed-effects models
+library(ggplot2)
+library(tidyr)
+library(patchwork)
+library(lme4)
 library(lmerTest)
 
-# Load data from CSV file with Latin1 encoding for accented letters
+# Caricamento dei dati dal file CSV con l'encodin latin1 per le lettere accentate
 df = read.csv(file="data/All_Stimuli_RTs.csv", header=TRUE, sep=",", encoding = "latin1")
 
-# Fix label inconsistency in CATEGORY column by removing leading and trailing spaces
+# Correzione delle incongruenze nelle etichette della colonna CATEGORY rimuovendo gli spazi iniziali e finali
 df$CATEGORY = stringr::str_squish(df$CATEGORY)
 
-# Rename some labels for errors to make them clearer
+# Rinomina alcune etichette degli errori per renderle più chiare e interpretabili
 df = df %>%
   mutate(TYPE_OF_ERROR = ifelse(TYPE_OF_ERROR == "", "NO ERROR", TYPE_OF_ERROR))
 df = df %>%
   mutate(TYPE_OF_ERROR = ifelse(TYPE_OF_ERROR == "NONE", "NO RESPONSE", TYPE_OF_ERROR))
 
-# Convert variables to factors for categorical analysis
-df$ID = as.factor(as.character(df$ID))                   # ID as factor
-df$ITEM = as.factor(df$ITEM)                             # ITEM as factor
-df$CONDITION = as.factor(as.character(df$CONDITION))     # CONDITION as factor
-df$BLOCK_4 = as.factor(df$BLOCK_4)                       # BLOCK_4 as factor
-df$CATEGORY = as.factor(df$CATEGORY)                     # CATEGORY as factor
-df$FREQUENCY_R = as.factor(df$FREQUENCY_R)               # FREQUENCY_R as factor
-df$NEW_PIC = as.factor(df$NEW_PIC)                       # NEW_PIC as factor
-df$CATEGORY_RESPONSE = as.factor(df$CATEGORY_RESPONSE)   # CATEGORY_RESPONSE as factor
-df$TYPE_OF_ERROR = as.factor(df$TYPE_OF_ERROR)           # TYPE_OF_ERROR as factor
+# Conversione delle variabili categoriali in fattori
+df$ID = as.factor(as.character(df$ID))
+df$ITEM = as.factor(df$ITEM)
+df$CONDITION = as.factor(as.character(df$CONDITION))
+df$BLOCK_4 = as.factor(df$BLOCK_4)
+df$CATEGORY = as.factor(df$CATEGORY)
+df$FREQUENCY_R = as.factor(df$FREQUENCY_R)
+df$NEW_PIC = as.factor(df$NEW_PIC)
+df$CATEGORY_RESPONSE = as.factor(df$CATEGORY_RESPONSE)
+df$TYPE_OF_ERROR = as.factor(df$TYPE_OF_ERROR)
 
-# Create a data frame to encode alignment based on CATEGORY_RESPONSE and CONDITION
+# Creazione del dataframe per codificare l'allineamento basato sul CATEGORY_RESPONSE e CONDITION
 mat = data.frame(
   CATEGORY_RESPONSE = c(1, 0, 1, 0),
   CONDITION = c('Basic', 'Basic', 'Category', 'Category'),
   ALIGNMENT = c('non-aligned', 'aligned', 'aligned', 'non-aligned')
 )
-mat$CATEGORY_RESPONSE = as.factor(mat$CATEGORY_RESPONSE)  # Convert CATEGORY_RESPONSE to factor
-mat$CONDITION = as.factor(mat$CONDITION)                  # Convert CONDITION to factor
-mat$ALIGNMENT = as.factor(mat$ALIGNMENT)                  # Convert ALIGNMENT to factor
-
-# Merge data frames to include alignment information in df1
+mat$CATEGORY_RESPONSE = as.factor(mat$CATEGORY_RESPONSE)
+mat$CONDITION = as.factor(mat$CONDITION)
+mat$ALIGNMENT = as.factor(mat$ALIGNMENT)
 df1 = dplyr::inner_join(df, mat)
 
-# Load Lexique 3.83
+# Caricamento del Lexique 3.83
 lexique = readRDS("data/Lexique383.rds")
 
-# From Lexique, select only nouns
+# Dal Lexique, si selezionano solo i nomi
 lexique_nouns_filtered = lexique %>%
   filter(cgram == "NOM") %>%
   select(ortho, freqfilms2)
 
-# Perform a left join between df and lexique_nouns
+# Si effettua un left join tra df e lexique_nouns
 df1 = df1 %>%
   left_join(lexique_nouns_filtered, by = c("WORD_FRENCH" = "ortho"))
 
-# Delete the rows associated with "pile" that have lexical frequency = 0
+# Cancellazione delle righe associate con "pile" che hanno frequenza lessicale = 0
 df1 = df1 %>%
   filter(!(WORD_FRENCH == "pile" & freqfilms2 == 0))
 
-# Check for rows where no match was found
+# Controllo delle righe che non contengono matches
 unmatched_rows = df1 %>%
   filter(is.na(freqfilms2))
 
-# Handle custom cases where freqfilms2 should be set to 0
+# Gestione dei casi particolari con frequenza pari a 0
 df1$freqfilms2 = ifelse(df1$WORD_FRENCH %in% c("cor français", "thermos"), 0, df1$freqfilms2)
 
-# Handle custom cases where orthography is different
+# Gestione dei casi particolari con orthografy differente
 freq_planche = lexique_nouns_filtered %>% filter(ortho == "planche") %>% pull(freqfilms2)
 freq_oeil = lexique_nouns_filtered %>% filter(ortho == "oeil") %>% pull(freqfilms2)
 freq_oeuf = lexique_nouns_filtered %>% filter(ortho == "oeuf") %>% pull(freqfilms2)
@@ -84,14 +82,7 @@ df1 = df1 %>%
     )
   )
 
-# Rename freqfilms2 to FREQUENCY_STIM
-df1 = df1 %>%
-  rename(FREQUENCY_STIM = freqfilms2)
-
-# Add a log frequency
-df1$FREQUENCY_STIM_LOG = log1p(df1$FREQUENCY_STIM)
-
-# Remove intermediate objects that I don't need anymore
+# Rimozione di oggetti non utilizzati
 remove(df, lexique, lexique_nouns_filtered, mat, unmatched_rows, freq_oeil, freq_oeuf, freq_planche)
 
 
@@ -102,7 +93,7 @@ remove(df, lexique, lexique_nouns_filtered, mat, unmatched_rows, freq_oeil, freq
 df1$REACTION_TIME     <- as.numeric(df1$REACTION_TIME)
 df1$REACTION_TIME_LOG <- log(df1$REACTION_TIME)
 
-# Rimozione colonne superflue
+# Rimozione delle colonne superflue
 df1$AUDIO_FILE         <- NULL
 df1$BLOCK_4            <- NULL
 df1$FREQUENCY_R        <- NULL
@@ -111,23 +102,22 @@ df1$PICTURE            <- NULL
 df1$WORD_FRENCH        <- NULL
 df1$NO_RESPONSE        <- NULL
 df1$SEM1               <- NULL
-df1$FREQUENCY_STIM     <- NULL
-df1$FREQUENCY_STIM_LOG <- NULL
 df1$RESPONSE           <- NULL
 df1$ERROR              <- NULL
-
 df1$ALIGNMENT          <- relevel(df1$ALIGNMENT, ref = "non-aligned")
 
-# Crea la tabella incrociata
+# Creazione della tabella incrociata
 tabella_incrociata <- table(df1$CATEGORY, df1$CATEGORY_RESPONSE)
 print(tabella_incrociata)
 
+# Creazione della tabella delle proporzioni
 proporzioni <- tabella_incrociata[, 2] / 360
 df_plot <- data.frame(
   Category = names(proporzioni),
   Proporzione = as.numeric(proporzioni)
 )
 
+# Grafico della tabella delle proporzioni
 ggplot(df_plot, aes(x = reorder(Category, -Proporzione), y = Proporzione)) +
   geom_col(width = 0.6, fill = "skyblue", color = "black", linewidth = 0.2) + 
   geom_text(aes(label = round(Proporzione, 3)), vjust = -0.5, fontface = "plain", size = 3) + 
@@ -146,6 +136,7 @@ ggplot(df_plot, aes(x = reorder(Category, -Proporzione), y = Proporzione)) +
   ylim(0, max(df_plot$Proporzione) + 0.05)
 
 
+
 # ==============================================================================
 # 3. MULTIVERSE - DEFINIZIONE DELLE OPERAZIONI SUI DATI (DECISION GRID)
 # ==============================================================================
@@ -153,6 +144,7 @@ scelte_immagini <- c("All_Pictures", "No_Novel_Pictures")
 scelte_errori   <- c("Strict_Errors_Only", "Broad_Errors_Included")
 scelte_rimozione_cat <- c("None", "instruments de musique", "fruits", "professions", "nature", "accessoires")
 
+# Creazione della tabella per i multiversi
 griglia_multiverso <- expand.grid(
   Immagini     = scelte_immagini, 
   Errori       = scelte_errori, 
@@ -172,8 +164,9 @@ library(specr)
 
 
 # ==============================================================================
-# 6. FUNZIONE DI ESTRAZIONE AGGIORNATA (SOLO BETA PARAMETRICI)
+# 5. FUNZIONE DI ESTRAZIONE AGGIORNATA (SOLO BETA PARAMETRICI)
 # ==============================================================================
+# Creazione della funzione che estrae le informazioni di interesse dai modelli
 extract_for_sca <- function(model, model_name, scelta_img, scelta_err, scelta_cat) {
   
   family_choice <- case_when(
@@ -219,7 +212,7 @@ extract_for_sca <- function(model, model_name, scelta_img, scelta_err, scelta_ca
 
 
 # ==============================================================================
-# 5 & 7. AUTOMAZIONE MASSIFICA: ECO-CICLO MODELLI (384 CONFIGURAZIONI)
+# 6. ESECUZIONE DEI MODELLI (384 CONFIGURAZIONI)
 # ==============================================================================
 d_spec_accumulatore <- list()
 
@@ -301,7 +294,7 @@ d_spec <- bind_rows(d_spec_accumulatore)
 
 
 # ==============================================================================
-# 10. GENERAZIONE SPECIFICATION CURVES SUI BETA (SCALATI SEPARATAMENTE)
+# 7. INIZIALIZZAZIONE DELLE SPECIFICATION CURVES SUI BETA
 # ==============================================================================
 
 # Iniezione delle colonne fittizie necessarie a specr per evitare glitch nel rendering
@@ -311,22 +304,22 @@ df_beta_all <- d_spec %>% mutate(x = "x", y = "y")
 df_beta_all$removed_category <- factor(df_beta_all$removed_category, 
                                        levels = c("None", "instruments de musique", "fruits", "professions", "nature", "accessoires"))
 
-# ------------------------------------------------------------------------------
-# DIVISIONE IN BASE ALLA SCALA DEI COEFFICIENTI BETA
-# ------------------------------------------------------------------------------
+
+
+# ==============================================================================
+# 7. DIVISIONE IN BASE ALLA SCALA DEI COEFFICIENTI BETA
+# ==============================================================================
+
 # Sotto-dataset A: SCALA DEI MILLISECONDI REALI (Modelli Lineari m2 e Gamma m4)
 beta_scala_ms  <- df_beta_all %>% filter(grepl("m2_", model_id) | grepl("m4_", model_id))
 
 # Sotto-dataset B: SCALA TRASFORMATA (Modelli Log-Linear m1 e InvGauss Log m3)
 beta_scala_log <- df_beta_all %>% filter(grepl("m1_", model_id) | grepl("m3_", model_id))
 
-# Creazione dei sotto-dataset per il Multiverso Compatto (N = 32 per ciascuna scala)
-mv_64_ms  <- beta_scala_ms %>% filter(removed_category == "None")
-mv_64_log <- beta_scala_log %>% filter(removed_category == "None")
 
 
 # ==============================================================================
-# BLOCCO SALVATAGGI 1: SCALA MILLISECONDI (Modelli m2 & m4)
+# SOTTO-DATASET A: SCALA MILLISECONDI (Modelli m2 & m4)
 # ==============================================================================
 
 # --- MULTIVERSO ESTESO CON LEAVE-ONE-OUT (N = 192) ---
@@ -350,8 +343,9 @@ p_ms_384_cont <- plot_specs(beta_scala_ms %>% filter(Interaction == "ORDER:ALIGN
 ggsave("figures/BETA_MS_384_Order_Alignment.png", plot = p_ms_384_cont, width = 4000, height = 4000/1.6, units = "px")
 
 
+
 # ==============================================================================
-# BLOCCO SALVATAGGI 2: SCALA TRASFORMATA (Modelli m1 & m3)
+# SOTTO-DATASET B: SCALA TRASFORMATA (Modelli m1 & m3)
 # ==============================================================================
 
 # --- MULTIVERSO ESTESO CON LEAVE-ONE-OUT (N = 192) ---
@@ -375,32 +369,20 @@ p_log_384_cont <- plot_specs(beta_scala_log %>% filter(Interaction == "ORDER:ALI
 ggsave("figures/BETA_LOG_384_Order_Alignment.png", plot = p_log_384_cont, width = 4000, height = 4000/1.6, units = "px")
 
 
-save.image("data/workspace.Rdata")
 
+
+# ==============================================================================
+# 8. SALVATAGGIO DATI
+# ==============================================================================
+
+# save.image("data/workspace.Rdata")
 load("data/workspace.Rdata")
 
 
-# Volcano plot -------------------------------------------------------------
 
-# install.packages("BiocManager")
-# BiocManager::install("EnhancedVolcano")
-
-# library(EnhancedVolcano)
-# 
-# df <- beta_scala_ms %>%
-#   filter(Interaction == "ORDER:ALIGNMENT") %>%
-#   as.data.frame()
-# 
-# EnhancedVolcano(
-#   df,
-#   lab = rownames(df),
-#   x = "estimate",
-#   y = "p.value"
-# )
-
-
-
-## Scala dei ms ------------------------------------------------------------
+# ==============================================================================
+# 9. VOLCANO PLOT
+# ==============================================================================
 
 beta_all = beta_scala_ms %>% 
   add_row(beta_scala_log) %>% 
