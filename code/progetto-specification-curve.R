@@ -135,6 +135,75 @@ ggplot(df_plot, aes(x = reorder(Category, -Proporzione), y = Proporzione)) +
   ) +
   ylim(0, max(df_plot$Proporzione) + 0.05)
 
+# Creazione della tabella incrociata tra CATEGORY e ALIGNMENT
+tabella_incrociata_align <- table(df1$CATEGORY, df1$ALIGNMENT)
+print(tabella_incrociata_align)
+
+# Calcolo della proporzione di risposte 'aligned' sul totale delle risposte per categoria
+proporzioni_align <- tabella_incrociata_align[, "aligned"] / rowSums(tabella_incrociata_align)
+df_plot_align <- data.frame(
+  Category = names(proporzioni_align),
+  Proporzione = as.numeric(proporzioni_align)
+)
+
+# Grafico della tabella delle proporzioni di alignment per category
+ggplot(df_plot_align, aes(x = reorder(Category, -Proporzione), y = Proporzione)) +
+  geom_col(width = 0.6, fill = "skyblue", color = "black", linewidth = 0.2) + 
+  geom_text(aes(label = round(Proporzione, 3)), vjust = -0.5, fontface = "plain", size = 3) + 
+  labs(
+    title = "Proporzione di risposte Aligned",
+    x = "Category",
+    y = "Proportion of Aligned response"
+  ) +
+  theme_minimal(base_size = 13) + 
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, margin = margin(b = 5)),
+    axis.text.x = element_text(angle = 45, hjust = 1), 
+    panel.grid.major.x = element_blank(), 
+    panel.grid.minor = element_blank()
+  ) +
+  ylim(0, max(df_plot_align$Proporzione) + 0.05)
+
+
+# Tabella a 3 vie: Conteggio di ALIGNMENT per ogni CATEGORY dentro ogni CONDITION
+tabella_3way <- table(df1$CATEGORY, df1$ALIGNMENT, df1$CONDITION)
+print(tabella_3way)
+
+# Creazione della tabella a 3 vie
+tabella_3way <- table(df1$CATEGORY, df1$ALIGNMENT, df1$CONDITION)
+# 3 = CONDITION, 1 = CATEGORY, 2 = ALIGNMENT
+ftable(tabella_3way, row.vars = c(3, 1), col.vars = 2)
+
+# Calcolo delle proporzioni di "aligned" sul totale di ogni specifica combinazione Category/Condition
+df_plot_cond <- df1 %>%
+  group_by(CATEGORY, CONDITION) %>%
+  summarise(
+    Total = n(),
+    Aligned_Count = sum(ALIGNMENT == "aligned"),
+    Proporzione = Aligned_Count / Total,
+    .groups = 'drop'
+  )
+
+# Grafico della tabella delle proporzioni di alignment per category e codirion
+ggplot(df_plot_cond, aes(x = reorder(CATEGORY, -Proporzione), y = Proporzione, fill = CONDITION)) +
+  geom_col(width = 0.6, color = "black", linewidth = 0.2, show.legend = FALSE) + 
+  geom_text(aes(label = round(Proporzione, 3)), vjust = -0.5, fontface = "plain", size = 2.8) + 
+  facet_wrap(~ CONDITION, scales = "free_x") + 
+  scale_fill_brewer(palette = "Pastel1") + 
+  labs(
+    title = "Proporzione di risposte Aligned per Category a seconda di Condition",
+    x = "Category",
+    y = "Proportion of Aligned response"
+  ) +
+  theme_minimal(base_size = 13) + 
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, margin = margin(b = 10)),
+    axis.text.x = element_text(angle = 45, hjust = 1), 
+    panel.grid.major.x = element_blank(), 
+    panel.grid.minor = element_blank(),
+    strip.background = element_rect(fill = "grey95", color = "grey80"),
+  ) +
+  ylim(0, max(df_plot_cond$Proporzione) + 0.07)
 
 
 # ==============================================================================
