@@ -460,11 +460,10 @@ beta_all = beta_scala_ms %>%
     mutate(word_type = ifelse(grepl("item", model_id),
                               "item", "category"))
 
-which_interaction = "ORDER:ALIGNMENT"
+which_interaction = "ORDER"
 which_scala = "ms"
 
 beta_all %>% 
-  filter(scala == which_scala) %>% 
   filter(Interaction == which_interaction) %>% 
   mutate(significativo = (p.value < 0.05)) %>% 
   mutate(p.value = -log10(p.value)) %>% 
@@ -473,6 +472,7 @@ beta_all %>%
          pch=significativo)) + 
   geom_point() +
   geom_hline(yintercept = -log10(0.05), col=2, lwd=1) +
+  facet_wrap(~ scala, scales="free_x") +
   annotate("text", x = -Inf, y = -log10(0.05), label = "Soglia 0.05", 
            vjust = -0.5, hjust = -0.1) +
   theme_bw() +
@@ -488,14 +488,12 @@ beta_all %>%
     ))
 
 
-# Salvataggio automatico di tutti i 6 grafici
+# Salvataggio automatico dei 3 grafici
 
-for(which_scala in c("ms", "log")) {
-  for(which_interaction in c("ORDER:ALIGNMENT", "ALIGNMENT:CONDITION", "ORDER")) {
-    print(c(which_scala, which_interaction))
+for(which_interaction in c("ORDER:ALIGNMENT", "ALIGNMENT:CONDITION", "ORDER")) {
+    print(which_interaction)
     
     grafico = beta_all %>% 
-        filter(scala == which_scala) %>% 
         filter(Interaction == which_interaction) %>% 
         mutate(significativo = (p.value < 0.05)) %>% 
         mutate(p.value = -log10(p.value)) %>% 
@@ -504,12 +502,13 @@ for(which_scala in c("ms", "log")) {
                    pch=significativo)) + 
         geom_point() +
         geom_hline(yintercept = -log10(0.05), col=2, lwd=1) +
+        facet_wrap(~ scala, scales="free_x") +
         annotate("text", x = -Inf, y = -log10(0.05), label = "Soglia 0.05", 
                  vjust = -0.5, hjust = -0.1) +
         theme_bw() +
         labs(x = "Stima del coefficiente", y = "-log10(p-value)",
              col = "Categoria rimossa", pch = "Significativo",
-             title = paste0("Volcano plot per ", which_interaction, ", scala ", which_scala)) +
+             title = paste0("Volcano plot per ", which_interaction)) +
         guides(
             colour = guide_legend(order = 1),
             shape  = guide_legend(order = 2)) +
@@ -518,11 +517,9 @@ for(which_scala in c("ms", "log")) {
                        "TRUE"  = 16    # vuoto
             ))
     
-    nome_file = paste0("figures/volcano_", str_replace_all(which_interaction, ":", "_"), "_", 
-                       which_scala, ".png")
+    nome_file = paste0("figures/volcano_", str_replace_all(which_interaction, ":", "_"), 
+                       ".png")
     ggsave(nome_file, plot = grafico, 
-           width = 4000, height = 4000/1.6, units = "px")
-  }
+           width = 3000, height = 3000/1.6, units = "px")
 }
-
 
