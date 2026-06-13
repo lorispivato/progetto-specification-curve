@@ -460,8 +460,7 @@ beta_all = beta_scala_ms %>%
     mutate(word_type = ifelse(grepl("item", model_id),
                               "item", "category"))
 
-which_interaction = "ORDER"
-which_scala = "ms"
+which_interaction = "ORDER:ALIGNMENT"
 
 beta_all %>% 
   filter(Interaction == which_interaction) %>% 
@@ -472,13 +471,17 @@ beta_all %>%
          pch=significativo)) + 
   geom_point() +
   geom_hline(yintercept = -log10(0.05), col=2, lwd=1) +
-  facet_wrap(~ scala, scales="free_x") +
+  facet_wrap(~ scala, scales="free_x",
+             labeller = as_labeller(c(
+                 log = "Scala logaritmica (log ms)",
+                 ms  = "Scala originale (ms)"
+             ))) +
   annotate("text", x = -Inf, y = -log10(0.05), label = "Soglia 0.05", 
            vjust = -0.5, hjust = -0.1) +
   theme_bw() +
   labs(x = "Stima del coefficiente", y = "-log10(p-value)",
        col = "Categoria rimossa", pch = "Significativo",
-       title = paste0("Volcano plot per ", which_interaction, ", scala ", which_scala)) +
+       title = paste0("Volcano plot per ", which_interaction)) +
   guides(
     colour = guide_legend(order = 1),
     shape  = guide_legend(order = 2)) +
@@ -502,7 +505,11 @@ for(which_interaction in c("ORDER:ALIGNMENT", "ALIGNMENT:CONDITION", "ORDER")) {
                    pch=significativo)) + 
         geom_point() +
         geom_hline(yintercept = -log10(0.05), col=2, lwd=1) +
-        facet_wrap(~ scala, scales="free_x") +
+        facet_wrap(~ scala, scales="free_x",
+                   labeller = as_labeller(c(
+                       log = "Scala logaritmica (log ms)",
+                       ms  = "Scala originale (ms)"
+                   ))) +
         annotate("text", x = -Inf, y = -log10(0.05), label = "Soglia 0.05", 
                  vjust = -0.5, hjust = -0.1) +
         theme_bw() +
