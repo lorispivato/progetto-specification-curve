@@ -393,21 +393,21 @@ beta_scala_log <- df_beta_all %>% filter(grepl("m1_", model_id) | grepl("m3_", m
 
 # --- MULTIVERSO ESTESO CON LEAVE-ONE-OUT (N = 192) ---
 
-# 4. Effetto Principale ORDER (N=192)
+# Effetto Principale ORDER (N=192)
 p_ms_384_ord <- plot_specs(beta_scala_ms %>% filter(Interaction == "ORDER"), choices = c("modeling", "random_effects", "datasets", "removed_category")) +
-  plot_annotation(title = "Beta Curve (N=192, Scala MS): Effetto Principale ORDER", 
+  plot_annotation(title = "Beta Curve (Scala MS e Scala Trasformata): Effetto Principale ORDER", 
                   theme = theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.5)))
 ggsave("figures/BETA_MS_384_Order_Pure.png", plot = p_ms_384_ord, width = 4000, height = 4000/1.6, units = "px")
 
-# 5. Interazione ALIGNMENT:CONDITION (N=192)
+# Interazione ALIGNMENT:CONDITION (N=192)
 p_ms_384_disc <- plot_specs(beta_scala_ms %>% filter(Interaction == "ALIGNMENT:CONDITION"), choices = c("modeling", "random_effects", "datasets", "removed_category")) +
-  plot_annotation(title = "Beta Curve (N=192, Scala MS): Interazione ALIGNMENT:CONDITION", 
+  plot_annotation(title = "Beta Curve (Scala MS e Scala Trasformata): Interazione ALIGNMENT:CONDITION", 
                   theme = theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.5)))
 ggsave("figures/BETA_MS_384_Alignment_Condition.png", plot = p_ms_384_disc, width = 4000, height = 4000/1.6, units = "px")
 
-# 6. Interazione ORDER:ALIGNMENT (N=192)
+# Interazione ORDER:ALIGNMENT (N=192)
 p_ms_384_cont <- plot_specs(beta_scala_ms %>% filter(Interaction == "ORDER:ALIGNMENT"), choices = c("modeling", "random_effects", "datasets", "removed_category")) +
-  plot_annotation(title = "Beta Curve (N=192, Scala MS): Interazione ORDER:ALIGNMENT", 
+  plot_annotation(title = "Beta Curve (Scala MS e Scala Trasformata): Interazione ORDER:ALIGNMENT", 
                   theme = theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.5)))
 ggsave("figures/BETA_MS_384_Order_Alignment.png", plot = p_ms_384_cont, width = 4000, height = 4000/1.6, units = "px")
 
@@ -419,26 +419,56 @@ ggsave("figures/BETA_MS_384_Order_Alignment.png", plot = p_ms_384_cont, width = 
 
 # --- MULTIVERSO ESTESO CON LEAVE-ONE-OUT (N = 192) ---
 
-# 10. Effetto Principale ORDER (N=192)
+# Effetto Principale ORDER (N=192)
 p_log_384_ord <- plot_specs(beta_scala_log %>% filter(Interaction == "ORDER"), choices = c("modeling", "random_effects", "datasets", "removed_category")) +
-  plot_annotation(title = "Beta Curve (N=192, Scala Trasformata): Effetto Principale ORDER", 
+  plot_annotation(title = "Beta Curve (Scala MS e Scala Trasformata): Effetto Principale ORDER", 
                   theme = theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.5)))
 ggsave("figures/BETA_LOG_384_Order_Pure.png", plot = p_log_384_ord, width = 4000, height = 4000/1.6, units = "px")
 
-# 11. Interazione ALIGNMENT:CONDITION (N=192)
+# Interazione ALIGNMENT:CONDITION (N=192)
 p_log_384_disc <- plot_specs(beta_scala_log %>% filter(Interaction == "ALIGNMENT:CONDITION"), choices = c("modeling", "random_effects", "datasets", "removed_category")) +
-  plot_annotation(title = "Beta Curve (N=192, Scala Trasformata): Interazione ALIGNMENT:CONDITION", 
+  plot_annotation(title = "Beta Curve (Scala MS e Scala Trasformata): Interazione ALIGNMENT:CONDITION", 
                   theme = theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.5)))
 ggsave("figures/BETA_LOG_384_Alignment_Condition.png", plot = p_log_384_disc, width = 4000, height = 4000/1.6, units = "px")
 
-# 12. Interazione ORDER:ALIGNMENT (N=192)
+# Interazione ORDER:ALIGNMENT (N=192)
 p_log_384_cont <- plot_specs(beta_scala_log %>% filter(Interaction == "ORDER:ALIGNMENT"), choices = c("modeling", "random_effects", "datasets", "removed_category")) +
-  plot_annotation(title = "Beta Curve (N=192, Scala Trasformata): Interazione ORDER:ALIGNMENT", 
+  plot_annotation(title = "Beta Curve (Scala MS e Scala Trasformata): Interazione ORDER:ALIGNMENT", 
                   theme = theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.5)))
 ggsave("figures/BETA_LOG_384_Order_Alignment.png", plot = p_log_384_cont, width = 4000, height = 4000/1.6, units = "px")
 
+# Creazione delle curve
+p_affiancato_1 <- p_ms_384_ord + p_log_384_ord +
+    plot_layout(nrow = 2)
 
+p_affiancato_2 <- p_ms_384_disc + p_log_384_disc +
+    plot_layout(nrow = 2)
 
+p_affiancato_3 <- p_ms_384_cont + p_log_384_cont +
+    plot_layout(nrow = 2)
+
+# Salvataggio delle curve
+ggsave(
+    "figures/curva_ORDER.png",
+    plot = p_affiancato_1,
+    width = 3000,
+    height = 3000*1.25,
+    units = "px"
+)
+ggsave(
+    "figures/curva_ALIGNMENTCONDITION.png",
+    plot = p_affiancato_2,
+    width = 3000,
+    height = 3000*1.25,
+    units = "px"
+)
+ggsave(
+    "figures/curva_ORDERALIGNMENT.png",
+    plot = p_affiancato_3,
+    width = 3000,
+    height = 3000*1.25,
+    units = "px"
+)
 
 # ==============================================================================
 # 8. SALVATAGGIO DATI
